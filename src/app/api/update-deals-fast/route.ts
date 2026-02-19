@@ -18,11 +18,11 @@ const parser = new Parser({
   maxRedirects: 3
 });
 
-// 가격 추출 함수 (수정됨)
+// 가격 추출 함수 (100% 성공률 목표)
 function extractPrice(title: string, source: string) {
   console.log(`💰 가격 추출 시도: "${title}"`);
   
-  // 패턴 1: 괄호 안의 가격 "(16,400원/무배)", "(21,900원/무료)"  
+  // 패턴 1: 괄호 안의 일반 가격 "(16,400원/무배)", "(21,900원/무료)"  
   const pricePattern1 = /\(([0-9,]+)원[\/][^)]*\)/;
   const match1 = title.match(pricePattern1);
   
@@ -32,8 +32,8 @@ function extractPrice(title: string, source: string) {
     return price;
   }
   
-  // 패턴 2: 단순 괄호 가격 "(16400원)"
-  const pricePattern2 = /\(([0-9,]+)원\)/;
+  // 패턴 2: 유클, 카드 등 접두사가 있는 가격 "(유클11,900원/유클무료)", "(카드9,800원/무료)"
+  const pricePattern2 = /\((?:\w+)?([0-9,]+)원[\/][^)]*\)/;
   const match2 = title.match(pricePattern2);
   
   if (match2) {
@@ -42,14 +42,37 @@ function extractPrice(title: string, source: string) {
     return price;
   }
   
-  // 패턴 3: 카드할인 등 "카드11,830원"
-  const pricePattern3 = /카드([0-9,]+)원/;
+  // 패턴 3: 단순 괄호 가격 "(16400원)"
+  const pricePattern3 = /\((?:\w+)?([0-9,]+)원\)/;
   const match3 = title.match(pricePattern3);
   
   if (match3) {
     const price = parseInt(match3[1].replace(/,/g, ''));
     console.log(`✅ 패턴3 매치: ${match3[1]} → ${price}`);
     return price;
+  }
+  
+  // 패턴 4: 카드할인 등 "카드11,830원"
+  const pricePattern4 = /카드([0-9,]+)원/;
+  const match4 = title.match(pricePattern4);
+  
+  if (match4) {
+    const price = parseInt(match4[1].replace(/,/g, ''));
+    console.log(`✅ 패턴4 매치: ${match4[1]} → ${price}`);
+    return price;
+  }
+  
+  // 패턴 5: 일반 텍스트 중 가격 "11,900원"
+  const pricePattern5 = /([0-9,]+)원/;
+  const match5 = title.match(pricePattern5);
+  
+  if (match5) {
+    const price = parseInt(match5[1].replace(/,/g, ''));
+    // 너무 큰 숫자는 제외 (연도 등)
+    if (price >= 100 && price <= 10000000) {
+      console.log(`✅ 패턴5 매치: ${match5[1]} → ${price}`);
+      return price;
+    }
   }
   
   console.log(`❌ 가격 매치 실패`);

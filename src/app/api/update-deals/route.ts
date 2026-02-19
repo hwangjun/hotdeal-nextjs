@@ -47,7 +47,7 @@ const RSS_SOURCES = [
   // 퀘이사존 제거 - RSS 403 차단으로 인한 API 타임아웃 방지
 ];
 
-// 가격 정보 추출 함수 (수정됨)
+// 가격 정보 추출 함수 (100% 성공률 목표)
 function extractPriceInfo(title: string, sourceDisplayName: string) {
   console.log(`💰 [${sourceDisplayName}] 가격 추출: "${title}"`);
   
@@ -69,8 +69,8 @@ function extractPriceInfo(title: string, sourceDisplayName: string) {
       };
     }
     
-    // 패턴 2: 단순 괄호 가격 "(16400원)"
-    const pricePattern2 = /\(([0-9,]+)원\)/;
+    // 패턴 2: 유클, 카드 등 접두사가 있는 가격 "(유클11,900원/유클무료)"
+    const pricePattern2 = /\((?:\w+)?([0-9,]+)원[\/][^)]*\)/;
     const match2 = title.match(pricePattern2);
     
     if (match2) {
@@ -82,17 +82,34 @@ function extractPriceInfo(title: string, sourceDisplayName: string) {
         discountRate: 0,
         hasPrice: true,
         priceText: `${price.toLocaleString()}원`,
+        deliveryInfo: title.includes('무료') || title.includes('무배') ? '무료배송' : '배송비 확인'
+      };
+    }
+    
+    // 패턴 3: 단순 괄호 가격 "(16400원)"
+    const pricePattern3 = /\((?:\w+)?([0-9,]+)원\)/;
+    const match3 = title.match(pricePattern3);
+    
+    if (match3) {
+      const price = parseInt(match3[1].replace(/,/g, ''));
+      console.log(`✅ [${sourceDisplayName}] 패턴3 매치: ${price}원`);
+      return {
+        price,
+        originalPrice: price,
+        discountRate: 0,
+        hasPrice: true,
+        priceText: `${price.toLocaleString()}원`,
         deliveryInfo: '배송비 확인'
       };
     }
     
-    // 패턴 3: 할인가 표시 "(원가 → 할인가)"나 카드할인
+    // 패턴 4: 카드할인 "카드11,830원"
     const cardPattern = /카드([0-9,]+)원/;
     const cardMatch = title.match(cardPattern);
     
     if (cardMatch) {
       const price = parseInt(cardMatch[1].replace(/,/g, ''));
-      console.log(`✅ [${sourceDisplayName}] 카드할인 매치: ${price}원`);
+      console.log(`✅ [${sourceDisplayName}] 패턴4 매치: ${price}원`);
       return {
         price,
         originalPrice: price,
@@ -101,6 +118,26 @@ function extractPriceInfo(title: string, sourceDisplayName: string) {
         priceText: `${price.toLocaleString()}원`,
         deliveryInfo: '카드할인가'
       };
+    }
+    
+    // 패턴 5: 일반 텍스트 중 가격 "11,900원"
+    const pricePattern5 = /([0-9,]+)원/;
+    const match5 = title.match(pricePattern5);
+    
+    if (match5) {
+      const price = parseInt(match5[1].replace(/,/g, ''));
+      // 합리적인 가격 범위만 허용
+      if (price >= 100 && price <= 10000000) {
+        console.log(`✅ [${sourceDisplayName}] 패턴5 매치: ${price}원`);
+        return {
+          price,
+          originalPrice: price,
+          discountRate: 0,
+          hasPrice: true,
+          priceText: `${price.toLocaleString()}원`,
+          deliveryInfo: '원문 확인'
+        };
+      }
     }
   }
 
