@@ -96,6 +96,7 @@ export default async function DealPage({ params }: { params: { id: string } }) {
                 title={deal.title}
                 mallName={deal.mall_name}
                 mallLogo={deal.mall_logo || '🛒'}
+                size="large"
                 className="w-full h-full object-cover"
               />
               {deal.mall_logo && (

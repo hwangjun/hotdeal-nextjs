@@ -122,6 +122,7 @@ export default async function HomePage() {
                     title={deal.title}
                     mallName={deal.mall_name}
                     mallLogo={deal.mall_logo || '🛒'}
+                    size="medium"
                     className="w-full h-full object-cover"
                   />
                   {deal.mall_logo && (

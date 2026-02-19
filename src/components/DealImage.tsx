@@ -8,14 +8,42 @@ interface DealImageProps {
   mallName: string;
   mallLogo: string;
   className?: string;
+  size?: 'small' | 'medium' | 'large'; // 이미지 크기 옵션 추가
 }
 
-export default function DealImage({ imageUrl, title, mallName, mallLogo, className = "" }: DealImageProps) {
+export default function DealImage({ imageUrl, title, mallName, mallLogo, className = "", size = 'medium' }: DealImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 크기별 최적화 설정
+  const getSizeParam = (size: string) => {
+    switch (size) {
+      case 'small': return 'd=80x80';    // 작은 썸네일용
+      case 'medium': return 'd=120x120'; // 기본 카드용 (권장)
+      case 'large': return 'd=160x160';  // 상세 페이지용
+      default: return 'd=120x120';
+    }
+  };
+
+  // 이미지 크기 최적화 함수
+  const optimizeImageUrl = (url: string) => {
+    if (!url) return url;
+    
+    const newSize = getSizeParam(size);
+    
+    // 알구몬 CDN 이미지 크기 최적화
+    if (url.includes('cdn.algumon.com') && url.includes('d=')) {
+      return url.replace(/d=\d+x\d+/, newSize);
+    }
+    
+    return url;
+  };
+
+  // 최적화된 이미지 URL 사용
+  const optimizedImageUrl = optimizeImageUrl(imageUrl);
+
   // placeholder URL인지 확인 (안전성 체크)
-  const isPlaceholderUrl = imageUrl && (imageUrl.includes('placeholder') || imageUrl.includes('via.placeholder'));
+  const isPlaceholderUrl = optimizedImageUrl && (optimizedImageUrl.includes('placeholder') || optimizedImageUrl.includes('via.placeholder'));
 
   const handleError = () => {
     setHasError(true);
@@ -27,7 +55,7 @@ export default function DealImage({ imageUrl, title, mallName, mallLogo, classNa
   };
 
   // 실제 이미지가 있는 경우
-  if (!hasError && !isPlaceholderUrl && imageUrl && imageUrl.trim() !== '') {
+  if (!hasError && !isPlaceholderUrl && optimizedImageUrl && optimizedImageUrl.trim() !== '') {
     return (
       <div className={`relative overflow-hidden bg-gray-100 ${className}`}>
         {/* 로딩 상태 */}
@@ -41,10 +69,12 @@ export default function DealImage({ imageUrl, title, mallName, mallLogo, classNa
         )}
         
         <img
-          src={imageUrl}
+          src={optimizedImageUrl}
           alt={title}
           className="w-full h-full object-cover transition-opacity duration-300"
           style={{ opacity: isLoading ? 0 : 1 }}
+          loading="lazy"
+          decoding="async"
           onError={handleError}
           onLoad={handleLoad}
         />
