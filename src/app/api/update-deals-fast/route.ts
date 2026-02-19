@@ -12,19 +12,10 @@ import { saveDeal } from '@/lib/simple-storage';
 // 성능 모니터링용 타이머
 const startTime = Date.now();
 
-// RSS 파서 초기화 (Vercel 환경 최적화)
+// RSS 파서 초기화 (단순하고 안정적인 설정)
 const parser = new Parser({
-  timeout: 8000, // 8초로 늘려서 안정성 확보
-  maxRedirects: 3,
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'application/rss+xml, application/xml, text/xml',
-    'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
-    'Accept-Encoding': 'gzip, deflate, br'
-  },
-  requestOptions: {
-    rejectUnauthorized: false  // SSL 인증서 문제 우회
-  }
+  timeout: 10000, // 10초 (원래대로)
+  maxRedirects: 3
 });
 
 // 가격 추출 함수 (수정됨)
@@ -128,8 +119,6 @@ async function collectCoolenjoy() {
   
   try {
     console.log('❄️ 쿨앤조이 RSS 수집 시작...');
-    console.log(`📡 URL: ${url}`);
-    console.log('🌐 Vercel 서버에서 요청 중...');
     
     const startTime = Date.now();
     
