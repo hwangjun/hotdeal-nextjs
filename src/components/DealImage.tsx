@@ -29,7 +29,7 @@ export default function DealImage({ imageUrl, title, mallName, mallLogo, classNa
   // 실제 이미지가 있는 경우
   if (!hasError && !isPlaceholderUrl && imageUrl && imageUrl.trim() !== '') {
     return (
-      <div className={`aspect-square rounded-lg mb-4 overflow-hidden bg-gray-100 relative ${className}`}>
+      <div className={`relative overflow-hidden bg-gray-100 ${className}`}>
         {/* 로딩 상태 */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
@@ -64,7 +64,7 @@ export default function DealImage({ imageUrl, title, mallName, mallLogo, classNa
 
   // 이미지가 없는 경우 - 전용 노이미지 디자인
   return (
-    <div className={`aspect-square rounded-lg mb-4 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 relative border-2 border-dashed border-gray-300 ${className}`}>
+    <div className={`relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-dashed border-gray-300 ${className}`}>
       <div className="w-full h-full flex items-center justify-center">
         <div className="text-center p-4">
           {/* 노이미지 아이콘 */}
