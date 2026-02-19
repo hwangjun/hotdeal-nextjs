@@ -139,18 +139,20 @@ export default function RootLayout({
         {/* Vercel Analytics */}
         <Analytics />
         
-        {/* Service Worker registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
+        {/* Service Worker registration - 프로덕션 환경에서만 */}
+        {process.env.NODE_ENV === 'production' && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js');
+                  });
+                }
+              `,
+            }}
+          />
+        )}
       </body>
     </html>
   );
