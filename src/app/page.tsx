@@ -158,21 +158,15 @@ export default async function HomePage() {
                   </div>
 
                   {/* 액션 버튼 */}
-                  <div className="flex gap-2">
+                  <div className="flex">
                     <a
                       href={deal.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded font-medium hover:bg-blue-700 transition-colors"
+                      className="w-full bg-blue-600 text-white text-center py-2 px-4 rounded font-medium hover:bg-blue-700 transition-colors"
                     >
-                      🛒 구매하러 가기
+                      페이지로 이동
                     </a>
-                    <Link
-                      href={`/deals/${deal.id}`}
-                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded font-medium hover:bg-gray-200 transition-colors"
-                    >
-                      상세
-                    </Link>
                   </div>
                 </div>
               </div>

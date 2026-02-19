@@ -179,17 +179,8 @@ export default async function DealPage({ params }: { params: { id: string } }) {
                     rel="noopener noreferrer"
                     className="w-full bg-blue-600 text-white text-center py-4 px-6 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors block"
                   >
-                    🛒 구매하러 가기
+                    페이지로 이동
                   </a>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <button className="bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors">
-                      📊 가격 비교
-                    </button>
-                    <button className="bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors">
-                      📈 가격 히스토리
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
