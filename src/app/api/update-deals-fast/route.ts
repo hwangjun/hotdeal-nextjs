@@ -287,4 +287,4 @@ export async function OPTIONS() {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
-}
+}// 강제 업데이트 Thu Feb 19 18:24:38 KST 2026
