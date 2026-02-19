@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import DealImage from '@/components/DealImage';
+import LiveSourceStatus from '@/components/LiveSourceStatus';
 import Parser from 'rss-parser';
 
 interface Deal {
@@ -25,33 +26,35 @@ interface Deal {
   description: string;
 }
 
-// RSS 소스 정의 (루리웹 임시 비활성화 - 타임아웃 문제)
+// 🚀 실시간 연결된 핫딜 RSS 소스 (3개 사이트 활성화)
 const RSS_SOURCES = [
   {
     name: 'ppomppu',
     displayName: '뽐뿌',
     url: 'http://www.ppomppu.co.kr/rss.php?id=ppomppu',
     logo: '💰',
+    category: '커뮤니티 핫딜',
+    speed: '빠름 (1분)',
+    description: '개인 발견 핫딜 정보'
   },
   {
     name: 'quasar', 
     displayName: '퀘이사존',
     url: 'https://quasarzone.com/rss.xml',
     logo: '💻',
+    category: 'IT/게이밍 전문',
+    speed: '보통 (5분)',
+    description: '기술 리뷰 + IT 딜'
   },
   {
     name: 'coolenjoy',
     displayName: '쿨앤조이',
     url: 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum',
     logo: '❄️',
+    category: '브랜드 공식 딜',
+    speed: '빠름 (1분)',
+    description: '브랜드 공식 할인 정보'
   }
-  // 루리웹 임시 비활성화 - 60초 타임아웃 문제로 인한 빌드 실패 방지
-  // {
-  //   name: 'ruliweb',
-  //   displayName: '루리웹',
-  //   url: 'https://bbs.ruliweb.com/community/board/300002/rss',
-  //   logo: '🎯',
-  // }
 ];
 
 // Fallback 데이터
@@ -337,27 +340,8 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* RSS 소스 표시 */}
-      <div className="bg-blue-50 border-b">
-        <div className="max-w-6xl mx-auto px-4 py-2">
-          <div className="flex items-center space-x-4 text-sm">
-            <span className="text-blue-800 font-medium">
-              {isUsingFallback ? '📁 테스트 데이터:' : '📡 실시간 연결:'}
-            </span>
-            <span className="flex items-center space-x-1">
-              <span>💰</span>
-              <span>뽐뿌</span>
-            </span>
-            <span className="flex items-center space-x-1">
-              <span>💻</span>
-              <span>퀘이사존</span>
-            </span>
-            <span className="text-gray-500 text-xs">
-              (루리웹 임시 비활성화)
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* 실시간 연결 상태 */}
+      {!isUsingFallback && <LiveSourceStatus />}
 
       {/* Main Content - 즉시 표시 */}
       <main className="max-w-6xl mx-auto px-4 py-6">

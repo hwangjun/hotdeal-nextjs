@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 핫딜 RSS 피드 목록 (실제 작동 확인된 것들)
+// 🚀 실시간 연결된 핫딜 RSS 피드 목록 (3개 사이트)
 const RSS_FEEDS = [
   {
     name: '뽐뿌',
     url: 'http://www.ppomppu.co.kr/rss.php?id=ppomppu',
     logo: '💰',
-    category: 'community'
+    category: 'community',
+    speed: 'fast'
   },
   {
     name: '퀘이사존',
     url: 'https://quasarzone.com/rss.xml',
     logo: '💻',
-    category: 'tech'
+    category: 'tech',
+    speed: 'normal'
   },
   {
-    name: '루리웹',
-    url: 'https://bbs.ruliweb.com/community/board/300002/rss',
-    logo: '🎯',
-    category: 'community'
+    name: '쿨앤조이',
+    url: 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum',
+    logo: '❄️',
+    category: 'community',
+    speed: 'fast'
   }
 ];
 
