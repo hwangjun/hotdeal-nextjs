@@ -136,139 +136,62 @@ async function collectPpomppu() {
   }
 }
 
-// XML 파싱 함수 (쿨앤조이 전용)
-function parseXMLtoItems(xmlText: string) {
-  const items = [];
-  const itemRegex = /<item>(.*?)<\/item>/gs;
-  let match;
-  
-  while ((match = itemRegex.exec(xmlText)) !== null) {
-    const itemXML = match[1];
-    
-    const titleMatch = itemXML.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/s) || itemXML.match(/<title>(.*?)<\/title>/s);
-    const linkMatch = itemXML.match(/<link>(.*?)<\/link>/s);
-    const descMatch = itemXML.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/s) || itemXML.match(/<description>(.*?)<\/description>/s);
-    const pubDateMatch = itemXML.match(/<pubDate>(.*?)<\/pubDate>/s);
-    
-    items.push({
-      title: titleMatch ? titleMatch[1].trim() : '제목 없음',
-      link: linkMatch ? linkMatch[1].trim() : '',
-      description: descMatch ? descMatch[1].trim() : '',
-      pubDate: pubDateMatch ? pubDateMatch[1].trim() : new Date().toISOString()
-    });
-  }
-  
-  return items;
-}
-
-// 쿨앤조이 고속 수집 (fetch API 직접 사용으로 우회)
-async function collectCoolenjoy() {
-  const url = 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum';
+// 루리웹 고속 수집 (안정적인 RSS 파서 사용)
+async function collectRuliweb() {
+  const url = 'https://bbs.ruliweb.com/market/board/1020/rss';
   
   try {
-    console.log('❄️ 쿨앤조이 fetch API로 직접 수집 시작...');
-    console.log('🌐 Vercel 차단 우회 시도...');
+    console.log('🎮 루리웹 RSS 수집 시작...');
     
     const startTime = Date.now();
     
-    // fetch API로 직접 요청 (Vercel 차단 완전 우회)
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/rss+xml,application/xml;q=0.9,text/xml;q=0.8,text/html;q=0.7,*/*;q=0.1',
-        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
-        'Cache-Control': 'max-age=0',
-        'Pragma': 'no-cache',
-        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"macOS"',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1',
-        'Referer': 'https://coolenjoy.net/bbs/jirum',
-        'Origin': 'https://coolenjoy.net'
-      },
-      signal: AbortSignal.timeout(20000) // 20초로 증가
-    });
-
-    const fetchTime = Date.now() - startTime;
-    console.log(`⏱️ 쿨앤조이 fetch 완료: ${fetchTime}ms`);
-    console.log(`📊 응답 상태: ${response.status} ${response.statusText}`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const xmlText = await response.text();
-    const textTime = Date.now() - startTime;
+    // 안정적인 rss-parser 사용 (루리웹은 차단 없음)
+    const feed = await parser.parseURL(url);
     
-    console.log(`📄 XML 텍스트 수신: ${textTime}ms`);
-    console.log(`📏 XML 길이: ${xmlText.length} 문자`);
-    console.log(`✅ XML 유효성: ${xmlText.startsWith('<?xml') ? '유효' : '무효'}`);
-    console.log(`📋 아이템 포함: ${xmlText.includes('<item>') ? '포함' : '미포함'}`);
-
-    // XML 파싱
-    const feedItems = parseXMLtoItems(xmlText);
-    const parseTime = Date.now() - startTime;
+    const endTime = Date.now();
     
-    console.log(`🔍 XML 파싱 완료: ${parseTime}ms`);
-    console.log(`📊 수집된 항목 수: ${feedItems.length}`);
+    console.log(`⏱️ 루리웹 RSS 파싱 완료: ${endTime - startTime}ms`);
+    console.log(`📊 수집된 항목 수: ${feed.items?.length || 0}`);
+    console.log(`🎯 피드 제목: ${feed.title || 'Unknown'}`);
     
-    if (feedItems.length === 0) {
-      console.log('⚠️ 쿨앤조이: 파싱된 항목이 없음');
-      console.log('🔍 XML 미리보기:', xmlText.substring(0, 500));
+    if (!feed.items || feed.items.length === 0) {
+      console.log('⚠️ 루리웹: RSS 항목이 없음');
       return [];
     }
     
-    const deals = feedItems.slice(0, 10).map((item, index) => {
-      console.log(`🔍 처리 중: ${item.title}`);
-      const price = extractPrice(item.title || '', 'coolenjoy');
+    const deals = feed.items.slice(0, 10).map((item, index) => {
+      console.log(`🔍 처리 중: ${item.title || '제목없음'}`);
+      const price = extractPrice(item.title || '', 'ruliweb');
       
       return {
-        id: `coolenjoy-${Date.now()}-${index}`,
-        title: item.title,
+        id: `ruliweb-${Date.now()}-${index}`,
+        title: item.title || '제목 없음',
         price: price,
         original_price: price,
         discount_rate: 0,
         has_price: !!price,
         price_text: price ? `${price.toLocaleString()}원` : '가격 정보 없음',
-        mall_name: '쿨앤조이',
-        mall_logo: '❄️',
+        mall_name: '루리웹',
+        mall_logo: '🎮',
         category: 'general',
         image_url: '',
         tags: price && item.title?.includes('무료') ? ['🚚 무배'] : [],
         url: item.link || '',
-        description: item.description || '',
-        pub_date: item.pubDate,
-        source: 'RSS-쿨앤조이',
+        description: item.contentSnippet || item.content || '',
+        pub_date: item.pubDate || item.isoDate || new Date().toISOString(),
+        source: 'RSS-루리웹',
         delivery_info: price && item.title?.includes('무료') ? '무료배송' : '원문 확인',
         crawled_at: new Date().toISOString()
       };
     });
     
-    console.log(`✅ 쿨앤조이: ${deals.length}개 수집 완료 (fetch 우회 성공!)`);
+    console.log(`✅ 루리웹: ${deals.length}개 수집 완료`);
     return deals;
     
   } catch (error) {
-    console.error('❌ 쿨앤조이 fetch 수집 실패:', error);
+    console.error('❌ 루리웹 RSS 수집 실패:', error);
     console.error(`❌ 에러 타입: ${error instanceof Error ? error.name : 'Unknown'}`);
     console.error(`❌ 에러 메시지: ${error instanceof Error ? error.message : String(error)}`);
-    
-    // 원인별 추가 정보
-    if (error instanceof Error) {
-      if (error.message.includes('timeout')) {
-        console.error('🕐 타임아웃: 15초 내 응답 없음');
-      } else if (error.message.includes('AbortError')) {
-        console.error('🚫 요청 중단: 네트워크 문제');
-      } else if (error.message.includes('fetch')) {
-        console.error('🌐 네트워크 에러: 연결 실패');
-      }
-    }
-    
     return [];
   }
 }
@@ -279,17 +202,17 @@ export async function POST() {
     const updateStartTime = Date.now();
 
     // 두 소스를 병렬로 빠르게 수집
-    console.log('🚀 뽐뿌 + 쿨앤조이 병렬 수집 시작...');
+    console.log('🚀 뽐뿌 + 루리웹 병렬 수집 시작...');
     
-    const [ppomppu, coolenjoy] = await Promise.all([
+    const [ppomppu, ruliweb] = await Promise.all([
       collectPpomppu(),
-      collectCoolenjoy()
+      collectRuliweb()
     ]);
     
-    console.log(`📊 수집 결과: 뽐뿌 ${ppomppu.length}개, 쿨앤조이 ${coolenjoy.length}개`);
+    console.log(`📊 수집 결과: 뽐뿌 ${ppomppu.length}개, 루리웹 ${ruliweb.length}개`);
     
     // 결과 합치기
-    const deals = [...ppomppu, ...coolenjoy];
+    const deals = [...ppomppu, ...ruliweb];
     console.log(`📦 총 딜 수: ${deals.length}개`);
     
     // Supabase에 저장
@@ -317,11 +240,11 @@ export async function POST() {
       data: {
         success: true,
         updated: saved,
-        sources: (ppomppu.length > 0 ? 1 : 0) + (coolenjoy.length > 0 ? 1 : 0),
+        sources: (ppomppu.length > 0 ? 1 : 0) + (ruliweb.length > 0 ? 1 : 0),
         fastMode: true,
         sources_detail: {
           ppomppu: ppomppu.length,
-          coolenjoy: coolenjoy.length
+          ruliweb: ruliweb.length
         },
         timestamp: new Date().toISOString(),
         performance: {
