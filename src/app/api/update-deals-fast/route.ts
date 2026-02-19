@@ -136,37 +136,90 @@ async function collectPpomppu() {
   }
 }
 
-// 쿨앤조이 고속 수집 (Vercel 환경 최적화)
+// XML 파싱 함수 (쿨앤조이 전용)
+function parseXMLtoItems(xmlText: string) {
+  const items = [];
+  const itemRegex = /<item>(.*?)<\/item>/gs;
+  let match;
+  
+  while ((match = itemRegex.exec(xmlText)) !== null) {
+    const itemXML = match[1];
+    
+    const titleMatch = itemXML.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/s) || itemXML.match(/<title>(.*?)<\/title>/s);
+    const linkMatch = itemXML.match(/<link>(.*?)<\/link>/s);
+    const descMatch = itemXML.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/s) || itemXML.match(/<description>(.*?)<\/description>/s);
+    const pubDateMatch = itemXML.match(/<pubDate>(.*?)<\/pubDate>/s);
+    
+    items.push({
+      title: titleMatch ? titleMatch[1].trim() : '제목 없음',
+      link: linkMatch ? linkMatch[1].trim() : '',
+      description: descMatch ? descMatch[1].trim() : '',
+      pubDate: pubDateMatch ? pubDateMatch[1].trim() : new Date().toISOString()
+    });
+  }
+  
+  return items;
+}
+
+// 쿨앤조이 고속 수집 (fetch API 직접 사용으로 우회)
 async function collectCoolenjoy() {
   const url = 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum';
   
   try {
-    console.log('❄️ 쿨앤조이 RSS 수집 시작...');
+    console.log('❄️ 쿨앤조이 fetch API로 직접 수집 시작...');
+    console.log('🌐 Vercel 차단 우회 시도...');
     
     const startTime = Date.now();
     
-    // 더 안정적인 방식으로 RSS 요청
-    const feed = await parser.parseURL(url);
+    // fetch API로 직접 요청 (rss-parser 우회)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      signal: AbortSignal.timeout(15000) // 15초 타임아웃
+    });
+
+    const fetchTime = Date.now() - startTime;
+    console.log(`⏱️ 쿨앤조이 fetch 완료: ${fetchTime}ms`);
+    console.log(`📊 응답 상태: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const xmlText = await response.text();
+    const textTime = Date.now() - startTime;
     
-    const endTime = Date.now();
+    console.log(`📄 XML 텍스트 수신: ${textTime}ms`);
+    console.log(`📏 XML 길이: ${xmlText.length} 문자`);
+    console.log(`✅ XML 유효성: ${xmlText.startsWith('<?xml') ? '유효' : '무효'}`);
+    console.log(`📋 아이템 포함: ${xmlText.includes('<item>') ? '포함' : '미포함'}`);
+
+    // XML 파싱
+    const feedItems = parseXMLtoItems(xmlText);
+    const parseTime = Date.now() - startTime;
     
-    console.log(`⏱️ 쿨앤조이 RSS 파싱 완료: ${endTime - startTime}ms`);
-    console.log(`📊 수집된 항목 수: ${feed.items?.length || 0}`);
-    console.log(`🎯 피드 제목: ${feed.title || 'Unknown'}`);
+    console.log(`🔍 XML 파싱 완료: ${parseTime}ms`);
+    console.log(`📊 수집된 항목 수: ${feedItems.length}`);
     
-    if (!feed.items || feed.items.length === 0) {
-      console.log('⚠️ 쿨앤조이: RSS 항목이 없음');
-      console.log('🔍 피드 구조:', Object.keys(feed));
+    if (feedItems.length === 0) {
+      console.log('⚠️ 쿨앤조이: 파싱된 항목이 없음');
+      console.log('🔍 XML 미리보기:', xmlText.substring(0, 500));
       return [];
     }
     
-    const deals = feed.items.slice(0, 10).map((item, index) => {
-      console.log(`🔍 처리 중: ${item.title || '제목없음'}`);
+    const deals = feedItems.slice(0, 10).map((item, index) => {
+      console.log(`🔍 처리 중: ${item.title}`);
       const price = extractPrice(item.title || '', 'coolenjoy');
       
       return {
         id: `coolenjoy-${Date.now()}-${index}`,
-        title: item.title || '제목 없음',
+        title: item.title,
         price: price,
         original_price: price,
         discount_rate: 0,
@@ -178,21 +231,33 @@ async function collectCoolenjoy() {
         image_url: '',
         tags: price && item.title?.includes('무료') ? ['🚚 무배'] : [],
         url: item.link || '',
-        description: item.contentSnippet || item.content || '',
-        pub_date: item.pubDate || item.isoDate || new Date().toISOString(),
+        description: item.description || '',
+        pub_date: item.pubDate,
         source: 'RSS-쿨앤조이',
         delivery_info: price && item.title?.includes('무료') ? '무료배송' : '원문 확인',
         crawled_at: new Date().toISOString()
       };
     });
     
-    console.log(`✅ 쿨앤조이: ${deals.length}개 수집 완료`);
+    console.log(`✅ 쿨앤조이: ${deals.length}개 수집 완료 (fetch 우회 성공!)`);
     return deals;
     
   } catch (error) {
-    console.error('❌ 쿨앤조이 RSS 수집 실패:', error);
+    console.error('❌ 쿨앤조이 fetch 수집 실패:', error);
     console.error(`❌ 에러 타입: ${error instanceof Error ? error.name : 'Unknown'}`);
     console.error(`❌ 에러 메시지: ${error instanceof Error ? error.message : String(error)}`);
+    
+    // 원인별 추가 정보
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        console.error('🕐 타임아웃: 15초 내 응답 없음');
+      } else if (error.message.includes('AbortError')) {
+        console.error('🚫 요청 중단: 네트워크 문제');
+      } else if (error.message.includes('fetch')) {
+        console.error('🌐 네트워크 에러: 연결 실패');
+      }
+    }
+    
     return [];
   }
 }
