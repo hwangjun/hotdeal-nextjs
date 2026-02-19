@@ -47,43 +47,65 @@ const RSS_SOURCES = [
   // 퀘이사존 제거 - RSS 403 차단으로 인한 API 타임아웃 방지
 ];
 
-// 가격 정보 추출 함수
+// 가격 정보 추출 함수 (수정됨)
 function extractPriceInfo(title: string, sourceDisplayName: string) {
+  console.log(`💰 [${sourceDisplayName}] 가격 추출: "${title}"`);
+  
   if (sourceDisplayName === '뽐뿌' || sourceDisplayName === '쿨앤조이') {
-    // 뽐뿌, 쿨앤조이 가격 패턴: (숫자원) 또는 (숫자,숫자원) 또는 (숫자원/숫자원)
-    const pricePattern = /\(([0-9,]+)원(?:\/([0-9,]+)원)?\)/;
-    const match = title.match(pricePattern);
+    // 패턴 1: 괄호 안의 일반 가격 "(16,400원/무배)", "(21,900원/무료)"  
+    const pricePattern1 = /\(([0-9,]+)원[\/][^)]*\)/;
+    const match1 = title.match(pricePattern1);
     
-    if (match) {
-      const price = parseInt(match[1].replace(/,/g, ''));
-      const originalPriceStr = match[2];
-      
-      if (originalPriceStr) {
-        // 할인가 있는 경우
-        const originalPrice = parseInt(originalPriceStr.replace(/,/g, ''));
-        const discountRate = Math.round((1 - price / originalPrice) * 100);
-        return {
-          price,
-          originalPrice,
-          discountRate,
-          hasPrice: true,
-          priceText: `${price.toLocaleString()}원`,
-          deliveryInfo: title.includes('무료') ? '무료배송' : '배송비 확인'
-        };
-      } else {
-        // 일반 가격
-        return {
-          price,
-          originalPrice: price,
-          discountRate: 0,
-          hasPrice: true,
-          priceText: `${price.toLocaleString()}원`,
-          deliveryInfo: title.includes('무료') ? '무료배송' : '배송비 확인'
-        };
-      }
+    if (match1) {
+      const price = parseInt(match1[1].replace(/,/g, ''));
+      console.log(`✅ [${sourceDisplayName}] 패턴1 매치: ${price}원`);
+      return {
+        price,
+        originalPrice: price,
+        discountRate: 0,
+        hasPrice: true,
+        priceText: `${price.toLocaleString()}원`,
+        deliveryInfo: title.includes('무료') || title.includes('무배') ? '무료배송' : '배송비 확인'
+      };
+    }
+    
+    // 패턴 2: 단순 괄호 가격 "(16400원)"
+    const pricePattern2 = /\(([0-9,]+)원\)/;
+    const match2 = title.match(pricePattern2);
+    
+    if (match2) {
+      const price = parseInt(match2[1].replace(/,/g, ''));
+      console.log(`✅ [${sourceDisplayName}] 패턴2 매치: ${price}원`);
+      return {
+        price,
+        originalPrice: price,
+        discountRate: 0,
+        hasPrice: true,
+        priceText: `${price.toLocaleString()}원`,
+        deliveryInfo: '배송비 확인'
+      };
+    }
+    
+    // 패턴 3: 할인가 표시 "(원가 → 할인가)"나 카드할인
+    const cardPattern = /카드([0-9,]+)원/;
+    const cardMatch = title.match(cardPattern);
+    
+    if (cardMatch) {
+      const price = parseInt(cardMatch[1].replace(/,/g, ''));
+      console.log(`✅ [${sourceDisplayName}] 카드할인 매치: ${price}원`);
+      return {
+        price,
+        originalPrice: price,
+        discountRate: 0,
+        hasPrice: true,
+        priceText: `${price.toLocaleString()}원`,
+        deliveryInfo: '카드할인가'
+      };
     }
   }
 
+  console.log(`❌ [${sourceDisplayName}] 가격 매치 실패`);
+  
   // 가격 정보 없음
   return {
     price: null,
