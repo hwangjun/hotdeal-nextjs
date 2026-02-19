@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import DealImage from '@/components/DealImage';
 import LiveSourceStatus from '@/components/LiveSourceStatus';
-import Parser from 'rss-parser';
+import { createClient } from '@supabase/supabase-js';
 
 interface Deal {
   id: string;
@@ -224,83 +224,83 @@ function generateTags(title: string, price: number) {
   return tags;
 }
 
-// RSS 데이터 서버에서 미리 가져오기
+// Supabase 클라이언트 초기화
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// 🗄️ Supabase에서 저장된 딜 데이터 직접 가져오기  
 async function getDeals(): Promise<{ deals: Deal[], isUsingFallback: boolean }> {
-  const parser = new Parser({
-    customFields: {
-      item: ['description', 'content:encoded']
-    }
-  });
-
   try {
-    console.log('🚀 서버에서 RSS 데이터 수집 시작...');
+    console.log('🗄️ Supabase에서 직접 딜 데이터 조회 중...');
     
-    const allDeals: Deal[] = [];
-    let successCount = 0;
+    // Supabase에서 직접 데이터 조회 (최신 30개)
+    const { data, error } = await supabase
+      .from('deals')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(30);
 
-    // RSS 소스들에서 데이터 수집 (빠른 시간 제한)
-    const fetchPromises = RSS_SOURCES.map(async (source) => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2초 제한으로 단축
+    if (error) {
+      throw new Error(`Supabase 조회 에러: ${error.message}`);
+    }
 
-        const feed = await parser.parseURL(source.url);
-        clearTimeout(timeoutId);
-        
-        if (feed.items && feed.items.length > 0) {
-          console.log(`✅ ${source.displayName}: ${feed.items.length}개 항목`);
-          
-          const items = feed.items.slice(0, 3); // 각 소스당 3개만
-          
-          items.forEach((item, index) => {
-            // 실제 가격 추출 시도
-            const pricing = extractPrice(item.title || '', source.name);
-            const tags = generateTags(item.title || '', pricing.price || 0);
-            
-            const deal: Deal = {
-              id: `${source.name}-${index + 1}`,
-              title: item.title || '제목 없음',
-              ...pricing,
-              mallName: source.displayName,
-              mallLogo: source.logo,
-              category: 'general',
-              imageUrl: `https://picsum.photos/300/200?random=${source.name}${index}`,
-              tags,
-              rating: (4.0 + Math.random() * 1.0).toFixed(1),
-              reviewCount: Math.floor(Math.random() * 3000) + 100,
-              timeLeft: `${Math.floor(Math.random() * 60) + 1}분 전`,
-              priceHistory: true,
-              compareAvailable: true,
-              source: `RSS-${source.displayName}`,
-              url: item.link || source.url,
-              description: item.contentSnippet || item.description || ''
-            };
-            
-            allDeals.push(deal);
-          });
-          
-          successCount++;
-        }
-      } catch (error) {
-        console.log(`⚠️ ${source.displayName} RSS 실패:`, error);
-      }
-    });
-
-    // 모든 RSS 소스 병렬 처리 (최대 5초)
-    await Promise.allSettled(fetchPromises);
-
-    if (allDeals.length > 0) {
-      console.log(`✅ RSS 성공: ${allDeals.length}개 딜 수집 (${successCount}/${RSS_SOURCES.length} 소스)`);
-      allDeals.sort((a, b) => b.discountRate - a.discountRate);
-      return { deals: allDeals, isUsingFallback: false };
+    if (data && data.length > 0) {
+      console.log(`✅ Supabase 직접 조회: ${data.length}개 딜 로드 성공`);
+      
+      // Supabase 데이터를 Deal 형식으로 변환
+      const deals: Deal[] = data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        originalPrice: item.original_price,
+        discountRate: item.discount_rate || 0,
+        hasPrice: item.has_price || false,
+        priceText: item.price_text || '가격 정보 없음',
+        mallName: item.mall_name,
+        mallLogo: item.mall_logo,
+        category: item.category || 'general',
+        imageUrl: item.image_url || `https://picsum.photos/300/200?random=${item.id}`,
+        tags: item.tags || [],
+        rating: (4.0 + Math.random() * 1.0).toFixed(1),
+        reviewCount: Math.floor(Math.random() * 3000) + 100,
+        timeLeft: formatTimeAgo(item.pub_date || item.created_at),
+        priceHistory: true,
+        compareAvailable: true,
+        source: item.source,
+        url: item.url,
+        description: item.description || ''
+      }));
+      
+      return { deals, isUsingFallback: false };
     }
     
   } catch (error) {
-    console.log('❌ RSS 수집 실패:', error);
+    console.log('❌ Supabase 직접 조회 실패:', error);
   }
 
   console.log('📁 Fallback 데이터 사용');
   return { deals: FALLBACK_DEALS, isUsingFallback: true };
+}
+
+// 시간 포맷팅 함수
+function formatTimeAgo(dateString: string): string {
+  if (!dateString) return '방금 전';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 1) return '방금 전';
+  if (diffMins < 60) return `${diffMins}분 전`;
+  
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}일 전`;
 }
 
 // 서버 컴포넌트 - 빠른 렌더링
