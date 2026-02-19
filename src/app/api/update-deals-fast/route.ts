@@ -12,12 +12,18 @@ import { saveDeal } from '@/lib/simple-storage';
 // 성능 모니터링용 타이머
 const startTime = Date.now();
 
-// RSS 파서 초기화 (고속용)
+// RSS 파서 초기화 (Vercel 환경 최적화)
 const parser = new Parser({
-  timeout: 5000, // 5초 타임아웃으로 단축
-  maxRedirects: 2,
+  timeout: 8000, // 8초로 늘려서 안정성 확보
+  maxRedirects: 3,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml, text/xml',
+    'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br'
+  },
+  requestOptions: {
+    rejectUnauthorized: false  // SSL 인증서 문제 우회
   }
 });
 
@@ -116,23 +122,29 @@ async function collectPpomppu() {
   }
 }
 
-// 쿨앤조이 고속 수집 (에러 처리 강화)
+// 쿨앤조이 고속 수집 (Vercel 환경 최적화)
 async function collectCoolenjoy() {
   const url = 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum';
   
   try {
     console.log('❄️ 쿨앤조이 RSS 수집 시작...');
     console.log(`📡 URL: ${url}`);
+    console.log('🌐 Vercel 서버에서 요청 중...');
     
     const startTime = Date.now();
+    
+    // 더 안정적인 방식으로 RSS 요청
     const feed = await parser.parseURL(url);
+    
     const endTime = Date.now();
     
     console.log(`⏱️ 쿨앤조이 RSS 파싱 완료: ${endTime - startTime}ms`);
     console.log(`📊 수집된 항목 수: ${feed.items?.length || 0}`);
+    console.log(`🎯 피드 제목: ${feed.title || 'Unknown'}`);
     
     if (!feed.items || feed.items.length === 0) {
       console.log('⚠️ 쿨앤조이: RSS 항목이 없음');
+      console.log('🔍 피드 구조:', Object.keys(feed));
       return [];
     }
     
