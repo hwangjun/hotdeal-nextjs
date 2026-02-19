@@ -1,0 +1,44 @@
+# 🐌 전체 핫딜 데이터 업데이트 - GitHub Actions
+name: Update All Hotdeals (Full Sync)
+
+on:
+  schedule:
+    # 매 5분마다 실행 (모든 소스)
+    - cron: '*/5 * * * *'
+  workflow_dispatch:  # 수동 실행도 가능
+    
+jobs:
+  update-all-deals:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Full Update (All Sources)
+        run: |
+          echo "🔄 전체 핫딜 데이터 업데이트 시작 (모든 소스)..."
+          
+          # 전체 업데이트 API 호출
+          start_time=$(date +%s%3N)
+          response=$(curl -s -w "%{http_code}" "https://hotdeal-nextjs.vercel.app/api/update-deals")
+          http_code=$(echo "$response" | tail -n1)
+          end_time=$(date +%s%3N)
+          duration=$((end_time - start_time))
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ 전체 업데이트 성공! (${duration}ms)"
+          else
+            echo "❌ 전체 업데이트 실패 (HTTP $http_code)"
+            exit 1
+          fi
+          
+      - name: Ping Main API  
+        run: |
+          echo "🏓 메인 API 워밍업..."
+          curl -s "https://hotdeal-nextjs.vercel.app/api/deals" > /dev/null
+          echo "✅ API 워밍업 완료!"
+
+      - name: Update Status
+        run: |
+          echo "📊 전체 업데이트 완료 시간: $(date)"
+          echo "🔗 사이트: https://hotdeal-nextjs.vercel.app"
+          echo "⚡ 고속 업데이트: 1분마다 (뽐뿌)"
+          echo "🔄 전체 업데이트: 5분마다 (모든 소스)"

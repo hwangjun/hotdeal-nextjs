@@ -3,6 +3,7 @@ import "./globals.css";
 import '../lib/init'; // 시스템 초기화 자동 실행
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import RealtimeUpdates from "@/components/RealtimeUpdates";
 
 export const metadata: Metadata = {
   title: '🔥 핫딜사이트 - 실시간 할인 정보',
@@ -133,6 +134,9 @@ export default function RootLayout({
         <div id="main-content" className="min-h-screen">
           {children}
         </div>
+        
+        {/* 실시간 딜 업데이트 알림 */}
+        <RealtimeUpdates />
         
         {/* Vercel Speed Insights */}
         <SpeedInsights />
