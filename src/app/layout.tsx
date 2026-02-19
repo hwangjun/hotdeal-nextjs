@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import '../lib/init'; // 시스템 초기화 자동 실행
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: '🔥 핫딜사이트 - 실시간 할인 정보',
@@ -135,6 +136,9 @@ export default function RootLayout({
         
         {/* Vercel Speed Insights */}
         <SpeedInsights />
+        
+        {/* Vercel Analytics */}
+        <Analytics />
         
         {/* Service Worker registration */}
         <script
