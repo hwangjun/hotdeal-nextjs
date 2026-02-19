@@ -12,10 +12,13 @@ import { saveDeal } from '@/lib/simple-storage';
 // 성능 모니터링용 타이머
 const startTime = Date.now();
 
-// RSS 파서 초기화
+// RSS 파서 초기화 (고속용)
 const parser = new Parser({
-  timeout: 10000, // 10초 타임아웃
-  maxRedirects: 3,
+  timeout: 5000, // 5초 타임아웃으로 단축
+  maxRedirects: 2,
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+  }
 });
 
 // 가격 추출 함수 (수정됨)
@@ -56,15 +59,28 @@ function extractPrice(title: string, source: string) {
   return null;
 }
 
-// 뽐뿌 고속 수집
+// 뽐뿌 고속 수집 (에러 처리 강화)
 async function collectPpomppu() {
   const url = 'http://www.ppomppu.co.kr/rss.php?id=ppomppu';
   
   try {
-    console.log('📡 뽐뿌 RSS 수집 중...');
+    console.log('💰 뽐뿌 RSS 수집 시작...');
+    console.log(`📡 URL: ${url}`);
+    
+    const startTime = Date.now();
     const feed = await parser.parseURL(url);
+    const endTime = Date.now();
+    
+    console.log(`⏱️ 뽐뿌 RSS 파싱 완료: ${endTime - startTime}ms`);
+    console.log(`📊 수집된 항목 수: ${feed.items?.length || 0}`);
+    
+    if (!feed.items || feed.items.length === 0) {
+      console.log('⚠️ 뽐뿌: RSS 항목이 없음');
+      return [];
+    }
     
     const deals = feed.items.slice(0, 10).map((item, index) => {
+      console.log(`🔍 처리 중: ${item.title || '제목없음'}`);
       const price = extractPrice(item.title || '', 'ppomppu');
       
       return {
@@ -89,24 +105,39 @@ async function collectPpomppu() {
       };
     });
     
-    console.log(`✅ 뽐뿌: ${deals.length}개 수집`);
+    console.log(`✅ 뽐뿌: ${deals.length}개 수집 완료`);
     return deals;
     
   } catch (error) {
     console.error('❌ 뽐뿌 RSS 수집 실패:', error);
+    console.error(`❌ 에러 타입: ${error instanceof Error ? error.name : 'Unknown'}`);
+    console.error(`❌ 에러 메시지: ${error instanceof Error ? error.message : String(error)}`);
     return [];
   }
 }
 
-// 쿨앤조이 고속 수집
+// 쿨앤조이 고속 수집 (에러 처리 강화)
 async function collectCoolenjoy() {
   const url = 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum';
   
   try {
-    console.log('❄️ 쿨앤조이 RSS 수집 중...');
+    console.log('❄️ 쿨앤조이 RSS 수집 시작...');
+    console.log(`📡 URL: ${url}`);
+    
+    const startTime = Date.now();
     const feed = await parser.parseURL(url);
+    const endTime = Date.now();
+    
+    console.log(`⏱️ 쿨앤조이 RSS 파싱 완료: ${endTime - startTime}ms`);
+    console.log(`📊 수집된 항목 수: ${feed.items?.length || 0}`);
+    
+    if (!feed.items || feed.items.length === 0) {
+      console.log('⚠️ 쿨앤조이: RSS 항목이 없음');
+      return [];
+    }
     
     const deals = feed.items.slice(0, 10).map((item, index) => {
+      console.log(`🔍 처리 중: ${item.title || '제목없음'}`);
       const price = extractPrice(item.title || '', 'coolenjoy');
       
       return {
@@ -131,11 +162,13 @@ async function collectCoolenjoy() {
       };
     });
     
-    console.log(`✅ 쿨앤조이: ${deals.length}개 수집`);
+    console.log(`✅ 쿨앤조이: ${deals.length}개 수집 완료`);
     return deals;
     
   } catch (error) {
     console.error('❌ 쿨앤조이 RSS 수집 실패:', error);
+    console.error(`❌ 에러 타입: ${error instanceof Error ? error.name : 'Unknown'}`);
+    console.error(`❌ 에러 메시지: ${error instanceof Error ? error.message : String(error)}`);
     return [];
   }
 }
@@ -146,13 +179,18 @@ export async function POST() {
     const updateStartTime = Date.now();
 
     // 두 소스를 병렬로 빠르게 수집
+    console.log('🚀 뽐뿌 + 쿨앤조이 병렬 수집 시작...');
+    
     const [ppomppu, coolenjoy] = await Promise.all([
       collectPpomppu(),
       collectCoolenjoy()
     ]);
     
+    console.log(`📊 수집 결과: 뽐뿌 ${ppomppu.length}개, 쿨앤조이 ${coolenjoy.length}개`);
+    
     // 결과 합치기
     const deals = [...ppomppu, ...coolenjoy];
+    console.log(`📦 총 딜 수: ${deals.length}개`);
     
     // Supabase에 저장
     let saved = 0;
