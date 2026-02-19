@@ -5,13 +5,11 @@ import { useState } from 'react';
 interface DealImageProps {
   imageUrl: string;
   title: string;
-  mallName: string;
-  mallLogo: string;
   className?: string;
   size?: 'small' | 'medium' | 'large'; // 이미지 크기 옵션 추가
 }
 
-export default function DealImage({ imageUrl, title, mallName, mallLogo, className = "", size = 'medium' }: DealImageProps) {
+export default function DealImage({ imageUrl, title, className = "", size = 'medium' }: DealImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -78,16 +76,6 @@ export default function DealImage({ imageUrl, title, mallName, mallLogo, classNa
           onError={handleError}
           onLoad={handleLoad}
         />
-        
-        {/* 실제 이미지 위 오버레이 - 로딩 완료 후만 표시 */}
-        {!isLoading && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-            <div className="text-white text-center">
-              <div className="text-2xl mb-1">{mallLogo}</div>
-              <div className="text-xs font-medium">{mallName}</div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -98,15 +86,11 @@ export default function DealImage({ imageUrl, title, mallName, mallLogo, classNa
       <div className="w-full h-full flex items-center justify-center">
         <div className="text-center p-4">
           {/* 노이미지 아이콘 */}
-          <div className="text-6xl mb-2 opacity-50">🖼️</div>
-          
-          {/* 쇼핑몰 정보 */}
-          <div className="text-3xl mb-2">{mallLogo}</div>
-          <div className="text-sm font-medium text-gray-700 mb-1">{mallName}</div>
+          <div className="text-6xl mb-4 opacity-30">🖼️</div>
           
           {/* 노이미지 텍스트 */}
-          <div className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full border">
-            📷 이미지 없음
+          <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full border shadow-sm">
+            이미지 없음
           </div>
         </div>
       </div>

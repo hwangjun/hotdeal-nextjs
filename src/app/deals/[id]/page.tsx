@@ -94,16 +94,9 @@ export default async function DealPage({ params }: { params: { id: string } }) {
               <DealImage 
                 imageUrl={deal.image_url || ''} 
                 title={deal.title}
-                mallName={deal.mall_name}
-                mallLogo={deal.mall_logo || '🛒'}
                 size="large"
                 className="w-full h-full object-cover"
               />
-              {deal.mall_logo && (
-                <div className="absolute top-4 left-4 bg-white rounded-full px-3 py-2 shadow-md">
-                  <span className="text-2xl">{deal.mall_logo}</span>
-                </div>
-              )}
               {discountRate > 0 && (
                 <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-2 rounded-lg font-bold shadow-md">
                   {discountRate}% 할인

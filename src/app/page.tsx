@@ -120,16 +120,9 @@ export default async function HomePage() {
                   <DealImage 
                     imageUrl={deal.image_url || ''} 
                     title={deal.title}
-                    mallName={deal.mall_name}
-                    mallLogo={deal.mall_logo || '🛒'}
                     size="medium"
                     className="w-full h-full object-cover"
                   />
-                  {deal.mall_logo && (
-                    <div className="absolute top-2 left-2 bg-white rounded-full px-2 py-1 text-sm">
-                      {deal.mall_logo}
-                    </div>
-                  )}
                 </div>
 
                 {/* 내용 */}
