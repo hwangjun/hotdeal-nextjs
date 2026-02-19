@@ -28,7 +28,7 @@ const parser = new Parser({
   }
 });
 
-// RSS 소스 정의 (뽐뿌 + 쿨앤조이 활성화)
+// RSS 소스 정의 (안정적인 2개 소스만 활성화)
 const RSS_SOURCES = [
   {
     name: 'ppomppu',
@@ -44,6 +44,7 @@ const RSS_SOURCES = [
     logo: '❄️',
     enabled: true
   }
+  // 퀘이사존 제거 - RSS 403 차단으로 인한 API 타임아웃 방지
 ];
 
 // 가격 정보 추출 함수

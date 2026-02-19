@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Fast Update (Ppomppu Only)
+      - name: Fast Update (Ppomppu + Coolenjoy)
         run: |
-          echo "⚡ 고속 핫딜 데이터 업데이트 시작 (뽐뿌 전용)..."
+          echo "⚡ 고속 핫딜 데이터 업데이트 시작 (뽐뿌 + 쿨앤조이)..."
           
           # 고속 API 호출 (뽐뿌만)
           start_time=$(date +%s%3N)

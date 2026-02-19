@@ -26,7 +26,7 @@ interface Deal {
   description: string;
 }
 
-// 🚀 실시간 연결된 핫딜 RSS 소스 (3개 사이트 활성화)
+// 🚀 실시간 연결된 핫딜 RSS 소스 (2개 안정적 사이트)
 const RSS_SOURCES = [
   {
     name: 'ppomppu',
@@ -38,15 +38,6 @@ const RSS_SOURCES = [
     description: '개인 발견 핫딜 정보'
   },
   {
-    name: 'quasar', 
-    displayName: '퀘이사존',
-    url: 'https://quasarzone.com/rss.xml',
-    logo: '💻',
-    category: 'IT/게이밍 전문',
-    speed: '보통 (5분)',
-    description: '기술 리뷰 + IT 딜'
-  },
-  {
     name: 'coolenjoy',
     displayName: '쿨앤조이',
     url: 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum',
@@ -55,6 +46,8 @@ const RSS_SOURCES = [
     speed: '빠름 (1분)',
     description: '브랜드 공식 할인 정보'
   }
+  // 퀘이사존 임시 제거 - RSS 접근 차단으로 인한 시스템 안정성 확보
+  // 추후 웹 크롤링 방식으로 별도 구현 예정
 ];
 
 // Fallback 데이터

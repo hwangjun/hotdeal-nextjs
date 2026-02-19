@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 🚀 실시간 연결된 핫딜 RSS 피드 목록 (3개 사이트)
+// 🚀 실시간 연결된 핫딜 RSS 피드 목록 (안정적인 2개 사이트)
 const RSS_FEEDS = [
   {
     name: '뽐뿌',
@@ -10,19 +10,13 @@ const RSS_FEEDS = [
     speed: 'fast'
   },
   {
-    name: '퀘이사존',
-    url: 'https://quasarzone.com/rss.xml',
-    logo: '💻',
-    category: 'tech',
-    speed: 'normal'
-  },
-  {
     name: '쿨앤조이',
     url: 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum',
     logo: '❄️',
     category: 'community',
     speed: 'fast'
   }
+  // 퀘이사존 제거 - RSS 403 접근 차단으로 인한 안정성 확보
 ];
 
 // RSS XML 파싱 함수

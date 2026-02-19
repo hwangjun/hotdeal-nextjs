@@ -31,15 +31,6 @@ const LIVE_SOURCES: SourceInfo[] = [
     status: 'connected'
   },
   {
-    name: 'quasar',
-    displayName: '퀘이사존',
-    logo: '💻',
-    category: 'IT/게이밍 전문',
-    speed: '5분 주기',
-    description: '기술 리뷰 + IT 딜',
-    status: 'connected'
-  },
-  {
     name: 'coolenjoy',
     displayName: '쿨앤조이',
     logo: '❄️',
@@ -48,6 +39,8 @@ const LIVE_SOURCES: SourceInfo[] = [
     description: '브랜드 공식 할인 정보',
     status: 'connected'
   }
+  // 퀘이사존 제거 - RSS 접근 차단으로 인한 시스템 안정화
+  // 추후 웹 크롤링 방식으로 핫딜 게시판 (qb_saleinfo) 구현 예정
 ];
 
 export default function LiveSourceStatus() {
@@ -112,7 +105,7 @@ export default function LiveSourceStatus() {
         </div>
 
         {/* 소스 목록 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sources.map((source) => (
             <div key={source.name} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
               
