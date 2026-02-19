@@ -1,0 +1,58 @@
+'use client';
+
+import React from 'react';
+import { BottomNavProps } from '@/lib/types';
+import { navItems } from '@/lib/data';
+
+const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) => {
+  const handleTabClick = (tabKey: string) => {
+    onTabChange(tabKey);
+    
+    // 페이지별 특별한 동작
+    switch(tabKey) {
+      case 'search':
+        const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+        }
+        break;
+      case 'favorites':
+        alert('찜한 상품 목록입니다! ❤️');
+        break;
+      case 'profile':
+        alert('내 정보 페이지입니다! 👤');
+        break;
+      default:
+        // home의 경우 특별한 동작 없음
+        break;
+    }
+  };
+
+  return (
+    <>
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40">
+        <div className="max-w-md mx-auto flex">
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              className={`nav-btn flex-1 py-2 px-1 text-center transition-colors ${
+                activeTab === item.key ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+              }`}
+              onClick={() => handleTabClick(item.key)}
+              aria-label={item.label}
+            >
+              <div className="text-lg">{item.icon}</div>
+              <div className="text-xs font-medium mt-1">{item.label}</div>
+            </button>
+          ))}
+        </div>
+      </nav>
+      
+      {/* Bottom spacing for fixed nav */}
+      <div className="h-20"></div>
+    </>
+  );
+};
+
+export default BottomNav;

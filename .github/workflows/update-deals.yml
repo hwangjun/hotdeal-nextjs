@@ -1,0 +1,39 @@
+# 🚀 핫딜 데이터 자동 업데이트 - GitHub Actions
+name: Update Hotdeals
+
+on:
+  schedule:
+    # 매 5분마다 실행 (GitHub Actions 최소 간격)
+    - cron: '*/5 * * * *'
+  workflow_dispatch:  # 수동 실행도 가능
+    
+jobs:
+  update-deals:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Update Hotdeal Data
+        run: |
+          echo "🔄 핫딜 데이터 업데이트 시작..."
+          
+          # API 호출로 데이터 업데이트
+          response=$(curl -s -w "%{http_code}" "https://hotdeal-nextjs.vercel.app/api/update-deals")
+          http_code=$(echo "$response" | tail -n1)
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ 핫딜 데이터 업데이트 성공!"
+          else
+            echo "❌ 업데이트 실패 (HTTP $http_code)"
+            exit 1
+          fi
+          
+      - name: Ping Main API  
+        run: |
+          echo "🏓 메인 API 워밍업..."
+          curl -s "https://hotdeal-nextjs.vercel.app/api/deals" > /dev/null
+          echo "✅ API 워밍업 완료!"
+
+      - name: Update Status
+        run: |
+          echo "📊 업데이트 완료 시간: $(date)"
+          echo "🔗 사이트: https://hotdeal-nextjs.vercel.app"
