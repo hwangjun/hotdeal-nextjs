@@ -5,8 +5,8 @@ import Parser from 'rss-parser';
 interface Deal {
   id: string;
   title: string;
-  price: number;
-  originalPrice: number;
+  price: number | null;
+  originalPrice: number | null;
   discountRate: number;
   hasPrice: boolean;
   priceText: string;
@@ -38,6 +38,12 @@ const RSS_SOURCES = [
     displayName: '퀘이사존',
     url: 'https://quasarzone.com/rss.xml',
     logo: '💻',
+  },
+  {
+    name: 'coolenjoy',
+    displayName: '쿨앤조이',
+    url: 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum',
+    logo: '❄️',
   }
   // 루리웹 임시 비활성화 - 60초 타임아웃 문제로 인한 빌드 실패 방지
   // {
@@ -141,6 +147,46 @@ const FALLBACK_DEALS: Deal[] = [
 ];
 
 // 가격 생성 함수 (fallback용 - 실제로는 API에서 실제 가격 추출)
+// 제목에서 실제 가격 추출
+function extractPrice(title: string, sourceName: string) {
+  // 쿨앤조이, 뽐뿌 패턴: "(21,900원/무료)", "(15,000원/배송비 3,000원)"
+  const pricePattern = /\(([0-9,]+)원[/\/].+?\)/;
+  const priceMatch = title.match(pricePattern);
+  
+  // 퀘이사존 패턴: 숫자만 있는 경우도 체크
+  const directPricePattern = /([0-9,]+)원/;
+  const directMatch = title.match(directPricePattern);
+  
+  let price = null;
+  
+  if (priceMatch) {
+    // 괄호 안의 가격 (쿨앤조이, 뽐뿌)
+    price = parseInt(priceMatch[1].replace(/,/g, ''));
+  } else if (directMatch) {
+    // 직접 언급된 가격
+    price = parseInt(directMatch[1].replace(/,/g, ''));
+  }
+  
+  if (price && price > 0) {
+    return {
+      price,
+      originalPrice: price,
+      discountRate: 0,
+      hasPrice: true,
+      priceText: `${price.toLocaleString()}원`
+    };
+  }
+  
+  // 가격 정보가 없는 경우
+  return {
+    price: null,
+    originalPrice: null,
+    discountRate: 0,
+    hasPrice: false,
+    priceText: '가격 정보 없음'
+  };
+}
+
 function generatePrice() {
   const basePrice = Math.floor(Math.random() * 100000) + 10000;
   const discountRate = Math.floor(Math.random() * 60) + 20;
@@ -204,8 +250,9 @@ async function getDeals(): Promise<{ deals: Deal[], isUsingFallback: boolean }> 
           const items = feed.items.slice(0, 3); // 각 소스당 3개만
           
           items.forEach((item, index) => {
-            const pricing = generatePrice();
-            const tags = generateTags(item.title || '', pricing.price);
+            // 실제 가격 추출 시도
+            const pricing = extractPrice(item.title || '', source.name);
+            const tags = generateTags(item.title || '', pricing.price || 0);
             
             const deal: Deal = {
               id: `${source.name}-${index + 1}`,
@@ -349,12 +396,12 @@ export default async function HomePage() {
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    {deal.hasPrice ? (
+                    {deal.hasPrice && deal.price ? (
                       <>
                         <span className="text-xl font-bold text-red-600">
                           {deal.price.toLocaleString()}원
                         </span>
-                        {deal.originalPrice > deal.price && (
+                        {deal.originalPrice && deal.originalPrice > deal.price && (
                           <div className="text-sm text-gray-500 line-through">
                             {deal.originalPrice.toLocaleString()}원
                           </div>

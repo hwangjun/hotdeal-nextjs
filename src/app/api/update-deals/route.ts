@@ -28,7 +28,7 @@ const parser = new Parser({
   }
 });
 
-// RSS 소스 정의 (뽐뿌만 활성화)
+// RSS 소스 정의 (뽐뿌 + 쿨앤조이 활성화)
 const RSS_SOURCES = [
   {
     name: 'ppomppu',
@@ -36,13 +36,20 @@ const RSS_SOURCES = [
     url: 'http://www.ppomppu.co.kr/rss.php?id=ppomppu',
     logo: '💰',
     enabled: true
+  },
+  {
+    name: 'coolenjoy',
+    displayName: '쿨앤조이',
+    url: 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum',
+    logo: '❄️',
+    enabled: true
   }
 ];
 
 // 가격 정보 추출 함수
 function extractPriceInfo(title: string, sourceDisplayName: string) {
-  if (sourceDisplayName === '뽐뿌') {
-    // 뽐뿌 가격 패턴: (숫자원) 또는 (숫자,숫자원) 또는 (숫자원/숫자원)
+  if (sourceDisplayName === '뽐뿌' || sourceDisplayName === '쿨앤조이') {
+    // 뽐뿌, 쿨앤조이 가격 패턴: (숫자원) 또는 (숫자,숫자원) 또는 (숫자원/숫자원)
     const pricePattern = /\(([0-9,]+)원(?:\/([0-9,]+)원)?\)/;
     const match = title.match(pricePattern);
     

@@ -1,8 +1,8 @@
 /**
- * 🚀 고속 핫딜 업데이트 API (뽐뿌 전용)
+ * 🚀 고속 핫딜 업데이트 API (뽐뿌 + 쿨앤조이)
  * - 1분마다 실행되는 고속 수집기
- * - 뽐뿌 RSS만 처리하여 속도 최적화
- * - 응답 시간 < 3초 목표
+ * - 빠른 소스들만 처리하여 속도 최적화
+ * - 응답 시간 < 5초 목표
  */
 
 import { NextResponse } from 'next/server';
@@ -18,7 +18,26 @@ const parser = new Parser({
   maxRedirects: 3,
 });
 
-// 뽐뿌 전용 고속 수집
+// 가격 추출 함수
+function extractPrice(title: string, source: string) {
+  // 쿨앤조이, 뽐뿌 패턴: "(21,900원/무료)", "(15,000원/배송비 3,000원)"
+  const pricePattern = /\(([0-9,]+)원[/\/].+?\)/;
+  const priceMatch = title.match(pricePattern);
+  
+  // 직접 가격 패턴: 숫자원
+  const directPricePattern = /([0-9,]+)원/;
+  const directMatch = title.match(directPricePattern);
+  
+  if (priceMatch) {
+    return parseInt(priceMatch[1].replace(/,/g, ''));
+  } else if (directMatch) {
+    return parseInt(directMatch[1].replace(/,/g, ''));
+  }
+  
+  return null;
+}
+
+// 뽐뿌 고속 수집
 async function collectPpomppu() {
   const url = 'http://www.ppomppu.co.kr/rss.php?id=ppomppu';
   
@@ -26,10 +45,8 @@ async function collectPpomppu() {
     console.log('📡 뽐뿌 RSS 수집 중...');
     const feed = await parser.parseURL(url);
     
-    const deals = feed.items.map((item, index) => {
-      // 가격 추출 (제목에서)
-      const priceMatch = item.title?.match(/\(([0-9,]+)원/);
-      const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : null;
+    const deals = feed.items.slice(0, 10).map((item, index) => {
+      const price = extractPrice(item.title || '', 'ppomppu');
       
       return {
         id: `ppomppu-${Date.now()}-${index}`,
@@ -43,12 +60,12 @@ async function collectPpomppu() {
         mall_logo: '💰',
         category: 'general',
         image_url: '',
-        tags: price ? ['🚚 무배'] : [],
+        tags: price && item.title?.includes('무료') ? ['🚚 무배'] : [],
         url: item.link || '',
         description: item.contentSnippet || item.content || '',
         pub_date: item.pubDate || item.isoDate || new Date().toISOString(),
         source: 'RSS-뽐뿌',
-        delivery_info: price ? '무료배송' : '원문 확인',
+        delivery_info: price && item.title?.includes('무료') ? '무료배송' : '원문 확인',
         crawled_at: new Date().toISOString()
       };
     });
@@ -62,13 +79,61 @@ async function collectPpomppu() {
   }
 }
 
+// 쿨앤조이 고속 수집
+async function collectCoolenjoy() {
+  const url = 'https://coolenjoy.net/bbs/rss.php?bo_table=jirum';
+  
+  try {
+    console.log('❄️ 쿨앤조이 RSS 수집 중...');
+    const feed = await parser.parseURL(url);
+    
+    const deals = feed.items.slice(0, 10).map((item, index) => {
+      const price = extractPrice(item.title || '', 'coolenjoy');
+      
+      return {
+        id: `coolenjoy-${Date.now()}-${index}`,
+        title: item.title || '제목 없음',
+        price: price,
+        original_price: price,
+        discount_rate: 0,
+        has_price: !!price,
+        price_text: price ? `${price.toLocaleString()}원` : '가격 정보 없음',
+        mall_name: '쿨앤조이',
+        mall_logo: '❄️',
+        category: 'general',
+        image_url: '',
+        tags: price && item.title?.includes('무료') ? ['🚚 무배'] : [],
+        url: item.link || '',
+        description: item.contentSnippet || item.content || '',
+        pub_date: item.pubDate || item.isoDate || new Date().toISOString(),
+        source: 'RSS-쿨앤조이',
+        delivery_info: price && item.title?.includes('무료') ? '무료배송' : '원문 확인',
+        crawled_at: new Date().toISOString()
+      };
+    });
+    
+    console.log(`✅ 쿨앤조이: ${deals.length}개 수집`);
+    return deals;
+    
+  } catch (error) {
+    console.error('❌ 쿨앤조이 RSS 수집 실패:', error);
+    return [];
+  }
+}
+
 export async function POST() {
   try {
-    console.log('🚀 고속 핫딜 업데이트 시작 (뽐뿌 전용)...');
+    console.log('🚀 고속 핫딜 업데이트 시작 (뽐뿌 + 쿨앤조이)...');
     const updateStartTime = Date.now();
 
-    // 뽐뿌만 빠르게 수집
-    const deals = await collectPpomppu();
+    // 두 소스를 병렬로 빠르게 수집
+    const [ppomppu, coolenjoy] = await Promise.all([
+      collectPpomppu(),
+      collectCoolenjoy()
+    ]);
+    
+    // 결과 합치기
+    const deals = [...ppomppu, ...coolenjoy];
     
     // Supabase에 저장
     let saved = 0;
@@ -95,9 +160,12 @@ export async function POST() {
       data: {
         success: true,
         updated: saved,
-        sources: deals.length > 0 ? 1 : 0,
+        sources: (ppomppu.length > 0 ? 1 : 0) + (coolenjoy.length > 0 ? 1 : 0),
         fastMode: true,
-        onlyPpomppu: true,
+        sources_detail: {
+          ppomppu: ppomppu.length,
+          coolenjoy: coolenjoy.length
+        },
         timestamp: new Date().toISOString(),
         performance: {
           totalTime: `${totalTime}ms`,
